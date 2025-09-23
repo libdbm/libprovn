@@ -1,0 +1,5 @@
+document
+  entity(ex:article)
+  agent(ex:alice)
+  wasAttributedTo(ex:article, ex:alice)
+endDocument

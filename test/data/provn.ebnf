@@ -1,0 +1,89 @@
+[1]   	document	   ::=   	"document" (namespaceDeclarations)? (expression)* (bundle)* "endDocument"
+[2]     expression	   ::=   	( entityExpression | activityExpression | generationExpression | usageExpression | startExpression | endExpression | invalidationExpression | communicationExpression | agentExpression | associationExpression | attributionExpression | delegationExpression | derivationExpression | influenceExpression | alternateExpression | specializationExpression | membershipExpression | extensibilityExpression )
+[3]   	entityExpression	   ::=   	"entity" "(" identifier optionalAttributeValuePairs ")"
+[4]   	optionalAttributeValuePairs	   ::=   	( "," "[" attributeValuePairs "]" )?
+[5]   	attributeValuePairs	   ::=   	( | attributeValuePair ( "," attributeValuePair )* )
+[6]   	attributeValuePair	   ::=   	attribute "=" literal
+[7]   	activityExpression	   ::=   	"activity" "(" identifier ( "," timeOrMarker "," timeOrMarker )? optionalAttributeValuePairs ")"
+[8]   	timeOrMarker	   ::=   	( time | "-" )
+[9]   	generationExpression	   ::=   	"wasGeneratedBy" "(" optionalIdentifier eIdentifier ( "," aIdentifierOrMarker "," timeOrMarker )? optionalAttributeValuePairs ")"
+[10]   	optionalIdentifier	   ::=   	( identifierOrMarker ";" )?
+[11]   	identifierOrMarker	   ::=   	( identifier | "-" )
+[12]   	usageExpression	   ::=   	"used" "(" optionalIdentifier aIdentifier ( "," eIdentifierOrMarker "," timeOrMarker )? optionalAttributeValuePairs ")"
+[13]   	communicationExpression	   ::=   	"wasInformedBy" "(" optionalIdentifier aIdentifier "," aIdentifier optionalAttributeValuePairs ")"
+[14]   	startExpression	   ::=   	"wasStartedBy" "(" optionalIdentifier aIdentifier ( "," eIdentifierOrMarker "," aIdentifierOrMarker "," timeOrMarker )? optionalAttributeValuePairs ")"
+[15]   	endExpression	   ::=   	"wasEndedBy" "(" optionalIdentifier aIdentifier ( "," eIdentifierOrMarker "," aIdentifierOrMarker "," timeOrMarker )? optionalAttributeValuePairs ")"
+[16]   	invalidationExpression	   ::=   	"wasInvalidatedBy" "(" optionalIdentifier eIdentifier ( "," aIdentifierOrMarker "," timeOrMarker )? optionalAttributeValuePairs ")"
+[17]   	derivationExpression	   ::=   	"wasDerivedFrom" "(" optionalIdentifier eIdentifier "," eIdentifier ( "," aIdentifierOrMarker "," gIdentifierOrMarker "," uIdentifierOrMarker )? optionalAttributeValuePairs ")"
+[18]   	agentExpression	           ::=   	"agent" "(" identifier optionalAttributeValuePairs ")"
+[19]   	attributionExpression	   ::=   	"wasAttributedTo" "(" optionalIdentifier eIdentifier "," agIdentifier optionalAttributeValuePairs ")"
+[20]   	associationExpression	   ::=   	"wasAssociatedWith" "(" optionalIdentifier aIdentifier ( "," agIdentifierOrMarker "," eIdentifierOrMarker )? optionalAttributeValuePairs ")"
+[21]   	delegationExpression	   ::=   	"actedOnBehalfOf" "(" optionalIdentifier agIdentifier "," agIdentifier ( "," aIdentifierOrMarker )? optionalAttributeValuePairs ")"
+[22]   	influenceExpression	   ::=   	"wasInfluencedBy" "(" optionalIdentifier eIdentifier "," eIdentifier optionalAttributeValuePairs ")"
+[23]   	bundle	   ::=   	"bundle" identifier (namespaceDeclarations)? (expression)* "endBundle"
+[24]   	alternateExpression	   ::=   	"alternateOf" "(" eIdentifier "," eIdentifier ")"
+[25]   	specializationExpression	   ::=   	"specializationOf" "(" eIdentifier "," eIdentifier ")"
+[26]   	membershipExpression	   ::=   	"hadMember" "(" cIdentifier "," eIdentifier ")"
+[27]   	eIdentifier	   ::=   	identifier
+[28]   	aIdentifier	   ::=   	identifier
+[29]   	agIdentifier	   ::=   	identifier
+[30]   	gIdentifier	   ::=   	identifier
+[31]   	uIdentifier	   ::=   	identifier
+[32]   	cIdentifier	   ::=   	identifier
+[33]   	eIdentifierOrMarker	   ::=   	( eIdentifier | "-" )
+[34]   	aIdentifierOrMarker	   ::=   	( aIdentifier | "-" )
+[35]   	agIdentifierOrMarker	   ::=   	( agIdentifier | "-" )
+[36]   	gIdentifierOrMarker	   ::=   	( gIdentifier | "-" )
+[37]   	uIdentifierOrMarker	   ::=   	( uIdentifier | "-" )
+[38]   	identifier	   ::=   	QUALIFIED_NAME
+[39]   	attribute	   ::=   	QUALIFIED_NAME
+[40]   	literal	   ::=   	typedLiteral | convenienceNotation
+[41]   	typedLiteral	   ::=   	STRING_LITERAL "%%" datatype
+[42]   	datatype	   ::=   	QUALIFIED_NAME
+[43]   	convenienceNotation	   ::=   	STRING_LITERAL (LANGTAG)? | INT_LITERAL | QUALIFIED_NAME_LITERAL
+[44]   	time	   ::=   	DATETIME
+[45]   	namespaceDeclarations	   ::=   	( defaultNamespaceDeclaration | namespaceDeclaration ) (namespaceDeclaration)*
+[46]   	namespaceDeclaration	   ::=   	"prefix" PN_PREFIX namespace
+[47]   	defaultNamespaceDeclaration	   ::=   	"default" IRI_REF
+[48]   	namespace	   ::=   	IRI_REF
+[49]   	extensibilityExpression	   ::=   	QUALIFIED_NAME "(" optionalIdentifier extensibilityArgument ( "," extensibilityArgument )* optionalAttributeValuePairs ")"
+[50]   	extensibilityArgument	   ::=   	( identifierOrMarker | literal | time | extensibilityExpression | extensibilityTuple )
+[51]   	extensibilityTuple	   ::=   	"{" extensibilityArgument ( "," extensibilityArgument )* "}" | "(" extensibilityArgument ( "," extensibilityArgument )* ")"
+[52]   	<QUALIFIED_NAME>	   ::=   	( PN_PREFIX ":" )? PN_LOCAL | PN_PREFIX ":"
+[53]   	<PN_LOCAL>	   ::=   	( PN_CHARS_U | [0-9] | PN_CHARS_OTHERS ) ( ( PN_CHARS | "." | PN_CHARS_OTHERS )* ( PN_CHARS | PN_CHARS_OTHERS ) )?
+[54]   	<PN_CHARS_OTHERS>	   ::=   	"/" | "@" | "~" | "&" | "+" | "*" | "?" | "#" | "$" | "!" | PERCENT | PN_CHARS_ESC
+[55]   	<PN_CHARS_ESC>	   ::=   	"\" ( "=" | "'" | "(" | ")" | "," | "-" | ":" | ";" | "[" | "]" | "." )
+[56]   	<PERCENT>	   ::=   	"%" HEX HEX
+[57]   	<HEX>	   ::=   	[0-9] | [A-F] | [a-f]
+[58]   	<STRING_LITERAL>	   ::=   	STRING_LITERAL2 | STRING_LITERAL_LONG2
+[60]   	<INT_LITERAL>	   ::=   	("-")? (DIGIT)+
+[62]   	<DIGIT>	   ::=   	[0-9]
+[61]   	<QUALIFIED_NAME_LITERAL>	   ::=   	"'" QUALIFIED_NAME "'"
+
+entity(id, attributes)
+    id	identifier
+    attributes	optionalAttributeValuePairs
+
+
+activity(id, start, end, attributes)
+    id	identifier
+    startTime	timeOrMarker
+    endTime	timeOrMarker
+    attributes	optionalAttributeValuePairs
+
+
+wasGeneratedBy(id, entity, activity, time, attributes)
+    id	optionalIdentifier
+    entity	eIdentifier
+    activity	aIdentifierOrMarker
+    time	timeOrMarker
+    attributes	optionalAttributeValuePairs
+
+
+wasInformedBy(id, informed, informant, attributes)
+    id	optionalIdentifier
+    informed	aIdentifier
+    informant	aIdentifier
+    attributes	optionalAttributeValuePairs
+
+

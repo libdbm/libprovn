@@ -1,0 +1,78 @@
+document
+  prefix ex <http://example.org/>
+  prefix dcterms <http://purl.org/dc/terms/>
+  prefix foaf <http://xmlns.com/foaf/0.1/>
+
+  entity(ex:article, [
+    dcterms:title="Understanding Provenance",
+    ex:version=1,
+    ex:published="2024-01-15"
+  ])
+
+  entity(ex:draft, [
+    dcterms:title="Understanding Provenance (Draft)",
+    ex:version=0
+  ])
+
+  agent(ex:alice, [
+    foaf:name="Alice Smith",
+    foaf:mbox="alice@example.org"
+  ])
+
+  agent(ex:bob, [
+    foaf:name="Bob Jones",
+    foaf:mbox="bob@example.org"
+  ])
+
+  agent(ex:organization, [
+    foaf:name="Example Publishers",
+    prov:type="Organization"
+  ])
+
+  activity(ex:writing, 2024-01-01T09:00:00, 2024-01-10T17:00:00, [
+    prov:type="authoring"
+  ])
+
+  activity(ex:review, 2024-01-11T10:00:00, 2024-01-14T16:00:00, [
+    prov:type="peer-review"
+  ])
+
+  activity(ex:publication, 2024-01-15T08:00:00, 2024-01-15T12:00:00)
+
+  wasGeneratedBy(ex:draft, ex:writing, 2024-01-10T16:45:00)
+  wasGeneratedBy(ex:article, ex:publication, 2024-01-15T11:30:00)
+
+  used(ex:review, ex:draft, 2024-01-11T10:30:00)
+  used(ex:publication, ex:draft, 2024-01-15T08:30:00)
+
+  wasAttributedTo(ex:draft, ex:alice)
+  wasAttributedTo(ex:article, ex:organization)
+
+  wasAssociatedWith(ex:writing, ex:alice)
+  wasAssociatedWith(ex:review, ex:bob)
+  wasAssociatedWith(ex:publication, ex:organization)
+
+  actedOnBehalfOf(ex:alice, ex:organization, ex:writing)
+  actedOnBehalfOf(ex:bob, ex:organization, ex:review)
+
+  wasDerivedFrom(ex:article, ex:draft, ex:publication, -, -)
+
+  wasInformedBy(ex:review, ex:writing)
+  wasInformedBy(ex:publication, ex:review)
+
+  bundle ex:revisions
+    entity(ex:article_v2, [
+      dcterms:title="Understanding Provenance (Revised)",
+      ex:version=2
+    ])
+
+    activity(ex:revision, 2024-02-01T09:00:00, 2024-02-05T17:00:00)
+
+    wasGeneratedBy(ex:article_v2, ex:revision)
+    wasDerivedFrom(ex:article_v2, ex:article)
+    wasAssociatedWith(ex:revision, ex:alice)
+  endBundle
+
+  specializationOf(ex:article, ex:document)
+  alternateOf(ex:article, ex:article_v2)
+endDocument
