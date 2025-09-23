@@ -23,3 +23,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Command-line tool for converting between PROV-N and PROV-JSON
 - Comprehensive test suite with W3C examples
 - Full documentation and examples
+
+## [1.0.1] - 2025-09-23
+
+### Added
+- Clean up linting issues
+- Added more complete documentation
+

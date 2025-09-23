@@ -1,6 +1,6 @@
 name: libprovn
 description: A Dart library for parsing and writing W3C PROV-N (Provenance Notation) and PROV-JSON formats.
-version: 1.0.0
+version: 1.0.1
 homepage: https://github.com/libdbm/libprovn
 repository: https://github.com/libdbm/libprovn
 issue_tracker: https://github.com/libdbm/libprovn/issues

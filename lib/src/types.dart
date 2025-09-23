@@ -3,6 +3,7 @@ import 'package:meta/meta.dart';
 /// Base class for all PROV nodes.
 @immutable
 abstract class Node {
+  /// Creates a base PROV node.
   const Node();
 }
 
@@ -14,13 +15,19 @@ abstract class Expression extends Node {
   /// The type name of this expression.
   final String name;
 
+  /// Creates a PROV expression with the given type [name].
   const Expression(this.name);
 }
 
 /// Represents a namespace declaration in PROV-N.
 ///
-/// Namespaces map prefixes to URIs, allowing qualified names like `ex:entity1`
-/// where `ex` is the prefix.
+/// In PROV-N, namespace bindings are declared with the `prefix` statement and
+/// allow qualified names such as `ex:e1`, where `ex` expands to a URI.
+/// A namespace maps a short [prefix] to a base [uri] used to qualify identifiers.
+///
+/// Example (PROV-N):
+///   prefix ex <http://example.org/>
+///   entity(ex:e1)
 @immutable
 class Namespace {
   /// The namespace prefix (e.g., 'ex', 'prov').
@@ -29,6 +36,7 @@ class Namespace {
   /// The namespace URI (e.g., 'http://example.org/').
   final String uri;
 
+  /// Creates a namespace declaration mapping [prefix] to [uri].
   const Namespace(this.prefix, this.uri);
 
   @override
@@ -37,8 +45,16 @@ class Namespace {
 
 /// Represents a complete PROV document.
 ///
-/// A document contains namespace declarations and a list of PROV expressions.
-/// This is the top-level container for PROV-N content.
+/// In PROV-N, a document is the top-level container that may declare namespaces
+/// and contain one or more expressions (entities, activities, agents, and
+/// relations). It may also contain bundles.
+///
+/// PROV-N form:
+///   document
+///     prefix ex <http://example.org/>
+///     entity(ex:e1)
+///     activity(ex:a, 2024-01-01T00:00:00Z, -)
+///   endDocument
 @immutable
 class DocumentExpression extends Expression {
   /// The namespace declarations for this document.
@@ -47,6 +63,7 @@ class DocumentExpression extends Expression {
   /// The PROV expressions contained in this document.
   final List<Expression> expressions;
 
+  /// Creates a PROV document with optional [namespaces] and [expressions].
   DocumentExpression([
     this.namespaces = const [],
     this.expressions = const [],
@@ -59,9 +76,14 @@ class DocumentExpression extends Expression {
 
 /// Represents a named bundle of provenance descriptions.
 ///
-/// Bundles are a mechanism for grouping provenance descriptions with
-/// their own namespace declarations. They can be used to describe
-/// provenance of provenance.
+/// A bundle is a named set of provenance descriptions with its own optional
+/// namespace declarations. Bundles enable provenance of provenance and the
+/// encapsulation of subgraphs within a document.
+///
+/// PROV-N form:
+///   bundle ex:b
+///     entity(ex:e1)
+///   endBundle
 @immutable
 class BundleExpression extends Expression {
   /// The unique identifier for this bundle.
@@ -76,6 +98,7 @@ class BundleExpression extends Expression {
   /// Additional attributes for this bundle.
   final List<Attribute> attributes;
 
+  /// Creates a bundle identified by [identifier] with [attributes], and optional [namespaces] and [expressions].
   BundleExpression(
     this.identifier,
     this.attributes, [
@@ -89,10 +112,13 @@ class BundleExpression extends Expression {
   }
 }
 
-/// Represents an entity in the provenance model.
+/// Represents an entity (prov:Entity).
 ///
-/// An entity is a physical, digital, conceptual, or other kind of thing
-/// with some fixed aspects. Entities may be real or imaginary.
+/// An entity is a physical, digital, conceptual, or other kind of thing with
+/// fixed aspects. Entities may be real or imaginary.
+///
+/// PROV-N form:
+///   entity(e, [attr1=val1, ...])
 @immutable
 class EntityExpression extends Expression {
   /// The unique identifier for this entity.
@@ -101,6 +127,7 @@ class EntityExpression extends Expression {
   /// Additional attributes describing this entity.
   final List<Attribute> attributes;
 
+  /// Creates an entity with [identifier] and associated [attributes].
   EntityExpression(this.identifier, this.attributes) : super('entity');
 
   @override
@@ -114,11 +141,14 @@ class EntityExpression extends Expression {
   String toString() => 'entity($identifier)';
 }
 
-/// Represents an activity in the provenance model.
+/// Represents an activity (prov:Activity).
 ///
-/// An activity is something that occurs over a period of time and acts
-/// upon or with entities. It may include consuming, processing, transforming,
-/// modifying, relocating, using, or generating entities.
+/// An activity occurs over a period of time and acts upon or with entities.
+/// It may consume, process, transform, modify, relocate, use, or generate
+/// entities.
+///
+/// PROV-N form:
+///   activity(a, startTime, endTime, [attrs])
 @immutable
 class ActivityExpression extends Expression {
   /// The unique identifier for this activity.
@@ -133,6 +163,7 @@ class ActivityExpression extends Expression {
   /// The optional end time of this activity.
   final DateTime? to;
 
+  /// Creates an activity with [identifier], [attributes], and optional start/end times [from] and [to].
   ActivityExpression(this.identifier, this.attributes, this.from, this.to)
       : super('activity');
 
@@ -144,18 +175,21 @@ class ActivityExpression extends Expression {
   int get hashCode => identifier.hashCode;
 
   @override
-  String toString() =>
-      'activity($identifier'
+  String toString() => 'activity($identifier'
       ',(${from ?? '_'},${to ?? '_'}),'
       '$attributes'
       ')';
 }
 
-/// Represents the generation of an entity by an activity.
+/// Represents the generation of an entity by an activity (wasGeneratedBy).
 ///
 /// Generation is the completion of production of a new entity by an activity.
-/// This entity did not exist before generation and becomes available for usage
-/// after this generation.
+/// The entity did not exist before generation and becomes available for usage
+/// after this event.
+///
+/// PROV-N form:
+///   wasGeneratedBy(e, a, t, [attrs])
+/// where e=entity, a=activity (optional), t=time (optional).
 @immutable
 class GenerationExpression extends Expression {
   /// Optional identifier for this generation relationship.
@@ -173,6 +207,7 @@ class GenerationExpression extends Expression {
   /// Additional attributes for this generation.
   final List<Attribute> attributes;
 
+  /// Creates a generation relation for [entityId] optionally by [activityId] at [datetime], with optional [id] and [attributes].
   GenerationExpression(
     this.id,
     this.entityId,
@@ -189,17 +224,20 @@ class GenerationExpression extends Expression {
   int get hashCode => entityId.hashCode;
 
   @override
-  String toString() =>
-      'wasGeneratedBy(${id ?? '_'},'
+  String toString() => 'wasGeneratedBy(${id ?? '_'},'
       '$entityId,${activityId ?? '_'},${datetime ?? '_'},'
       '$attributes'
       ')';
 }
 
-/// Represents the usage of an entity by an activity.
+/// Represents the usage of an entity by an activity (used).
 ///
-/// Usage is the beginning of utilizing an entity by an activity.
+/// Usage marks the beginning of utilizing an entity by an activity.
 /// Before usage, the activity had not begun to utilize this entity.
+///
+/// PROV-N form:
+///   used(a, e, t, [attrs])
+/// where a=activity, e=entity (optional), t=time (optional).
 @immutable
 class UsageExpression extends Expression {
   /// Optional identifier for this usage relationship.
@@ -217,6 +255,7 @@ class UsageExpression extends Expression {
   /// Additional attributes for this usage.
   final List<Attribute> attributes;
 
+  /// Creates a usage relation where [activityId] used [entityId] at [datetime], with optional [id] and [attributes].
   UsageExpression(
     this.id,
     this.entityId,
@@ -233,17 +272,20 @@ class UsageExpression extends Expression {
   int get hashCode => entityId.hashCode;
 
   @override
-  String toString() =>
-      'used(${id ?? '_'},'
+  String toString() => 'used(${id ?? '_'},'
       '$activityId,${entityId ?? '_'},${datetime ?? '_'},'
       '$attributes'
       ')';
 }
 
-/// Represents communication between two activities.
+/// Represents communication between two activities (wasInformedBy).
 ///
-/// Communication is the exchange of an entity between two activities,
-/// one activity using the entity generated by the other.
+/// Communication captures that one activity was informed by another activity,
+/// typically by using an entity generated by the other.
+///
+/// PROV-N form:
+///   wasInformedBy(a2, a1, [attrs])
+/// where a1 informs a2.
 @immutable
 class CommunicationExpression extends Expression {
   /// Optional identifier for this communication relationship.
@@ -258,6 +300,7 @@ class CommunicationExpression extends Expression {
   /// Additional attributes for this communication.
   final List<Attribute> attributes;
 
+  /// Creates a communication relation between [informedAgentId] and [informantId], with optional [id] and [attributes].
   CommunicationExpression(
     this.id,
     this.informedAgentId,
@@ -276,16 +319,19 @@ class CommunicationExpression extends Expression {
       Object.hash(informedAgentId.hashCode, informantId.hashCode);
 
   @override
-  String toString() =>
-      'wasInformedBy(${id ?? '_'},'
+  String toString() => 'wasInformedBy(${id ?? '_'},'
       '$informedAgentId,$informantId,'
       '$attributes'
       ')';
 }
 
-/// Represents the start of an activity.
+/// Represents the start of an activity (wasStartedBy).
 ///
-/// Start is when an activity begins, potentially triggered by an entity.
+/// Start describes when an activity begins, possibly triggered by an entity
+/// or another activity.
+///
+/// PROV-N form:
+///   wasStartedBy(a, e, starter, t, [attrs])
 @immutable
 class StartExpression extends Expression {
   /// Optional identifier for this start relationship.
@@ -306,6 +352,7 @@ class StartExpression extends Expression {
   /// Additional attributes for this start.
   final List<Attribute> attributes;
 
+  /// Creates a start relation for [activityId], optionally triggered by [entityId] or [starterId] at [datetime], with optional [id] and [attributes].
   StartExpression(
     this.id,
     this.entityId,
@@ -323,16 +370,19 @@ class StartExpression extends Expression {
   int get hashCode => entityId.hashCode;
 
   @override
-  String toString() =>
-      'wasStartedBy(${id ?? '_'},'
+  String toString() => 'wasStartedBy(${id ?? '_'},'
       '$activityId,${entityId ?? '_'},${starterId ?? '_'},${datetime ?? '_'},'
       '$attributes'
       ')';
 }
 
-/// Represents the end of an activity.
+/// Represents the end of an activity (wasEndedBy).
 ///
-/// End is when an activity ceases, potentially triggered by an entity.
+/// End describes when an activity completes, possibly triggered by an entity
+/// or another activity.
+///
+/// PROV-N form:
+///   wasEndedBy(a, e, ender, t, [attrs])
 @immutable
 class EndExpression extends Expression {
   /// Optional identifier for this end relationship.
@@ -353,6 +403,7 @@ class EndExpression extends Expression {
   /// Additional attributes for this end.
   final List<Attribute> attributes;
 
+  /// Creates an end relation for [activityId], optionally triggered by [entityId] or [enderId] at [datetime], with optional [id] and [attributes].
   EndExpression(
     this.id,
     this.entityId,
@@ -370,17 +421,19 @@ class EndExpression extends Expression {
   int get hashCode => entityId.hashCode;
 
   @override
-  String toString() =>
-      'wasEndedBy(${id ?? '_'},'
+  String toString() => 'wasEndedBy(${id ?? '_'},'
       '$activityId,${entityId ?? '_'},${enderId ?? '_'},${datetime ?? '_'},'
       '$attributes'
       ')';
 }
 
-/// Represents the invalidation of an entity.
+/// Represents the invalidation of an entity (wasInvalidatedBy).
 ///
-/// Invalidation is the start of the destruction, cessation, or expiry
-/// of an existing entity by an activity.
+/// Invalidation is the start of the destruction, cessation, or expiry of an
+/// existing entity by an activity.
+///
+/// PROV-N form:
+///   wasInvalidatedBy(e, a, t, [attrs])
 @immutable
 class InvalidationExpression extends Expression {
   /// Optional identifier for this invalidation relationship.
@@ -398,6 +451,7 @@ class InvalidationExpression extends Expression {
   /// Additional attributes for this invalidation.
   final List<Attribute> attributes;
 
+  /// Creates an invalidation relation for [entityId], optionally by [activityId] at [datetime], with optional [id] and [attributes].
   InvalidationExpression(
     this.id,
     this.entityId,
@@ -414,23 +468,45 @@ class InvalidationExpression extends Expression {
   int get hashCode => entityId.hashCode;
 
   @override
-  String toString() =>
-      'wasInvalidatedBy(${id ?? '_'},'
+  String toString() => 'wasInvalidatedBy(${id ?? '_'},'
       '$entityId,${activityId ?? '_'},${datetime ?? '_'},'
       '$attributes'
       ')';
 }
 
+/// Represents the derivation of one entity from another (wasDerivedFrom).
+///
+/// Derivation states that an entity was transformed, created from, or otherwise
+/// derived from another entity. The qualified form can also specify the activity,
+/// generation, and usage that connect the two.
+///
+/// PROV-N forms:
+///   wasDerivedFrom(e2, e1, [attrs])              // simple
+///   wasDerivedFrom(e2, e1, a, g2, u1, [attrs])   // qualified
 @immutable
 class DerivationExpression extends Expression {
+  /// The optional id of this expression.
   final String? id;
+
+  /// The id of the entity that was generated.
   final String generatedEntityId;
+
+  /// The id of the entity used in the generation.
   final String usedEntityId;
+
+  /// The optional id of the activity that generated the entity.
   final String? activityId;
+
+  /// The optional id of the specific instance of the generation that occurred.
   final String? generationId;
+
+  /// The optional id of the specific usage instance.
   final String? usageId;
+
+  /// Attributes captured as part of this expression.
   final List<Attribute> attributes;
 
+  /// Creates a derivation relation from [usedEntityId] to [generatedEntityId], with optional [activityId], [generationId], [usageId], [id], and [attributes].
   DerivationExpression(
     this.id,
     this.generatedEntityId,
@@ -451,18 +527,20 @@ class DerivationExpression extends Expression {
   int get hashCode => generatedEntityId.hashCode;
 
   @override
-  String toString() =>
-      'wasDerivedFrom(${id ?? '_'},'
+  String toString() => 'wasDerivedFrom(${id ?? '_'},'
       '$generatedEntityId,$usedEntityId, ${activityId ?? '_'},${generationId ?? '_'},${usageId ?? '_'},'
       '$attributes'
       ')';
 }
 
-/// Represents an agent in the provenance model.
+/// Represents an agent (prov:Agent).
 ///
-/// An agent is something that bears some form of responsibility for an
-/// activity taking place, for the existence of an entity, or for another
-/// agent's activity. An agent may be a person, organization, or software.
+/// An agent bears responsibility for an activity taking place, for the
+/// existence of an entity, or for another agent's activity. Typical agents
+/// include persons, organizations, or software.
+///
+/// PROV-N form:
+///   agent(ag, [attrs])
 @immutable
 class AgentExpression extends Expression {
   /// The unique identifier for this agent.
@@ -471,6 +549,7 @@ class AgentExpression extends Expression {
   /// Additional attributes describing this agent.
   final List<Attribute> attributes;
 
+  /// Creates an agent with [identifier] and associated [attributes].
   AgentExpression(this.identifier, this.attributes) : super('agent');
 
   @override
@@ -484,13 +563,28 @@ class AgentExpression extends Expression {
   String toString() => 'agent($identifier)';
 }
 
+/// Represents the attribution of an entity to an agent (wasAttributedTo).
+///
+/// Attribution associates an entity with the agent responsible for its
+/// existence.
+///
+/// PROV-N form:
+///   wasAttributedTo(e, ag, [attrs])
 @immutable
 class AttributionExpression extends Expression {
+  /// The optional id of this expression.
   final String? id;
+
+  /// The id of the entity attributed to the agent.
   final String entityId;
+
+  /// The id of the agent the entity is attributed to.
   final String agentId;
+
+  /// The set of attributes collected by this attribution.
   final List<Attribute> attributes;
 
+  /// Creates an attribution relation assigning [entityId] to [agentId], with optional [id] and [attributes].
   AttributionExpression(
     this.id,
     this.entityId,
@@ -508,21 +602,37 @@ class AttributionExpression extends Expression {
   int get hashCode => entityId.hashCode;
 
   @override
-  String toString() =>
-      'wasAttributedTo($id,'
+  String toString() => 'wasAttributedTo($id,'
       '$entityId,$agentId,'
       '$attributes'
       ')';
 }
 
+/// Represents the association of an activity with an agent (wasAssociatedWith).
+///
+/// Association links an activity to the agent responsible for its execution,
+/// optionally via a plan.
+///
+/// PROV-N form:
+///   wasAssociatedWith(a, ag, plan, [attrs])
 @immutable
 class AssociationExpression extends Expression {
-  final String? id;
+  /// The id of the activity associated with the agent.
   final String activityId;
-  final String? agentId;
+
+  /// An optional id of the plan associated with the activity.
   final String? planId;
+
+  /// The optional id of this expression.
+  final String? id;
+
+  /// The id of the agent associated with the activity.
+  final String? agentId;
+
+  /// The set of attributes collected by this association.
   final List<Attribute> attributes;
 
+  /// Creates an association between [activityId] and [agentId], optionally with [planId], [id], and [attributes].
   AssociationExpression(
     this.id,
     this.activityId,
@@ -541,21 +651,36 @@ class AssociationExpression extends Expression {
   int get hashCode => activityId.hashCode;
 
   @override
-  String toString() =>
-      'wasAssociatedWith($id,'
+  String toString() => 'wasAssociatedWith($id,'
       '$activityId, $agentId,$planId'
       '$attributes'
       ')';
 }
 
+/// Represents delegation between two agents.
+///
+/// Delegation (actedOnBehalfOf) states that one agent (the delegate) acted on
+/// behalf of another agent (the responsible) in the context of an optional
+/// activity. It is used to attribute responsibility across agents according to
+/// the PROV Data Model.
 @immutable
 class DelegationExpression extends Expression {
+  /// Optional identifier for this delegation (qualified influence) statement.
   final String? id;
+
+  /// Identifier of the delegate agent (the subordinate acting on behalf of another).
   final String delegateId;
+
+  /// Identifier of the responsible agent on whose behalf the delegate acted.
   final String agentId;
+
+  /// Optional identifier of the activity within which the delegation occurred.
   final String? activityId;
+
+  /// Additional attributes qualifying this delegation (e.g., prov:role).
   final List<Attribute> attributes;
 
+  /// Creates a delegation relation where [delegateId] acted on behalf of [agentId], optionally in [activityId], with optional [id] and [attributes].
   DelegationExpression(
     this.id,
     this.delegateId,
@@ -574,20 +699,32 @@ class DelegationExpression extends Expression {
   int get hashCode => Object.hash(delegateId.hashCode, agentId.hashCode);
 
   @override
-  String toString() =>
-      'actedOnBehalfOf(${id ?? '_'},'
+  String toString() => 'actedOnBehalfOf(${id ?? '_'},'
       '$delegateId, $agentId,${activityId ?? '_'}'
       '$attributes'
       ')';
 }
 
+/// Represents a generic influence relation between two PROV elements.
+///
+/// Influence (wasInfluencedBy) captures that one element had an effect on
+/// another, without specifying the nature of that effect. It generalizes other
+/// influence relations in PROV (e.g., derivation, attribution, association).
 @immutable
 class InfluenceExpression extends Expression {
+  /// Optional identifier for this influence statement.
   final String? id;
+
+  /// Identifier of the influenced element (entity, activity, or agent).
   final String influencee;
+
+  /// Identifier of the influencing element (entity, activity, or agent).
   final String influencer;
+
+  /// Additional attributes qualifying this influence.
   final List<Attribute> attributes;
 
+  /// Creates an influence relation where [influencee] was influenced by [influencer], with optional [id] and [attributes].
   InfluenceExpression(
     this.id,
     this.influencee,
@@ -605,18 +742,26 @@ class InfluenceExpression extends Expression {
   int get hashCode => Object.hash(influencee.hashCode, influencer.hashCode);
 
   @override
-  String toString() =>
-      'wasInfluencedBy(${id ?? '_'},'
+  String toString() => 'wasInfluencedBy(${id ?? '_'},'
       '$influencee,$influencer,'
       '$attributes'
       ')';
 }
 
+/// Represents alternates: two entities that present aspects of the same thing.
+///
+/// Alternate (alternateOf) asserts that the two entities are alternates of one
+/// another, i.e., different representations, views, or versions of the same
+/// underlying entity as per the PROV Data Model.
 @immutable
 class AlternateExpression extends Expression {
+  /// The alternate item.
   final String alternate;
+
+  /// The original item.
   final String original;
 
+  /// Creates an alternate relation between [alternate] and [original].
   AlternateExpression(this.alternate, this.original) : super('alternateOf');
 
   @override
@@ -632,11 +777,20 @@ class AlternateExpression extends Expression {
   String toString() => 'alternateOf($alternate, $original)';
 }
 
+/// Represents specialization between two entities.
+///
+/// Specialization (specializationOf) states that one entity is a more specific
+/// version of another, inheriting its characteristics while adding constraints
+/// or detail, following the PROV specification.
 @immutable
 class SpecializationExpression extends Expression {
+  /// Identifier of the specialized entity (the more specific entity).
   final String alternate;
+
+  /// Identifier of the general entity of which [alternate] is a specialization.
   final String original;
 
+  /// Creates a specialization relation where [alternate] is a specialization of [original].
   SpecializationExpression(this.alternate, this.original)
       : super('specializationOf');
 
@@ -653,11 +807,19 @@ class SpecializationExpression extends Expression {
   String toString() => 'specializationOf($alternate, $original)';
 }
 
+/// Represents membership of an entity in a collection.
+///
+/// Membership (hadMember) asserts that an entity is a member of a collection,
+/// aligning with the PROV Collections extension in PROV-N/PROV-DM.
 @immutable
 class MembershipExpression extends Expression {
+  /// The identity of the collection.
   final String collection;
+
+  /// The identity of the entity which is a member of the collection.
   final String entity;
 
+  /// Creates a membership relation where [entity] is a member of [collection].
   MembershipExpression(this.collection, this.entity) : super('hadMember');
 
   @override
@@ -673,12 +835,23 @@ class MembershipExpression extends Expression {
   String toString() => 'hadMember($collection, $entity)';
 }
 
+/// Represents user-defined extensions to the PROV relation vocabulary.
+///
+/// Extensibility expressions allow naming custom relations not covered by the
+/// core PROV relations, while still carrying positional arguments and standard
+/// PROV attributes, consistent with PROV-N extensibility.
 @immutable
 class ExtensibilityExpression extends Expression {
+  /// Optional identifier associated with this expression
   final String? id;
+
+  /// The arguments captured as part of this expression.
   final List<dynamic> arguments;
+
+  /// The attributes associated with this expression.
   final List<Attribute> attributes;
 
+  /// Creates an extensibility expression with the given [name], optional [id], positional [arguments], and [attributes].
   ExtensibilityExpression(
     this.id,
     String name,
@@ -689,8 +862,14 @@ class ExtensibilityExpression extends Expression {
 
 /// Base class for PROV attributes.
 ///
-/// Attributes provide additional information about PROV elements.
-/// They can be either string or numeric values.
+/// Attributes attach additional information to PROV elements in the form of
+/// key=value pairs (e.g., prov:type, prov:label, prov:role). In PROV-N, they
+/// appear in square brackets after an expression.
+///
+/// Example (PROV-N):
+///   entity(e, [prov:type='ex:Report', ex:version=2])
+///
+/// Implementations here support common value types such as strings and numbers.
 abstract class Attribute<T> extends Node {
   /// The name of this attribute (e.g., 'prov:type', 'ex:version').
   final String name;
@@ -698,6 +877,7 @@ abstract class Attribute<T> extends Node {
   /// The value of this attribute.
   final T value;
 
+  /// Creates an attribute with [name] and [value].
   const Attribute(this.name, this.value);
 
   @override
@@ -710,7 +890,10 @@ abstract class Attribute<T> extends Node {
 
 /// An attribute with a string value.
 ///
-/// Used for textual properties like names, descriptions, types, etc.
+/// Suitable for textual properties such as prov:label or string-valued prov:type.
+///
+/// Example (PROV-N):
+///   entity(e, [prov:label='Final Report'])
 class StringAttribute extends Attribute<String> {
   /// Creates a string attribute with the given [name] and [value].
   StringAttribute(super.name, super.value);
@@ -721,7 +904,10 @@ class StringAttribute extends Attribute<String> {
 
 /// An attribute with a numeric value.
 ///
-/// Used for numeric properties like counts, sizes, versions, etc.
+/// Suitable for numeric properties like counts, sizes, or versions.
+///
+/// Example (PROV-N):
+///   entity(e, [ex:version=2])
 class NumericAttribute extends Attribute<num> {
   /// Creates a numeric attribute with the given [name] and [value].
   NumericAttribute(super.name, super.value);

@@ -1,6 +1,3 @@
-/// A library for parsing W3C PROV-N (Provenance Notation) and PROV-JSON.
-library libprovn;
-
 export 'src/types.dart';
 export 'src/io/provn/parser.dart'
     show PROVNDocumentParser, PROVNExpressionsParser;
