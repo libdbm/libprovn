@@ -120,15 +120,13 @@ class PROVNParserDefinition extends PROVNGrammarDefinition {
         // each[0] = START_DOCUMENT
         // each[1] = optional identifier and attributes
         // each[2] = optional namespace declarations (List<Namespace>)
-        // each[3] = expressions (star)
-        // each[4] = bundles (star)
-        // each[5] = END_DOCUMENT
+        // each[3] = expressions and bundles (star)
+        // each[4] = END_DOCUMENT
 
         final namespaces = each[2] as List<Namespace>? ?? [];
 
         final expressions = <Expression>[];
         expressions.addAll((each[3] as List).cast<Expression>());
-        expressions.addAll((each[4] as List).cast<Expression>());
 
         return DocumentExpression(namespaces, expressions);
       });
@@ -328,6 +326,15 @@ class PROVNParserDefinition extends PROVNGrammarDefinition {
       });
 
   @override
+  Parser<Expression> mentionOfExpression() =>
+      super.mentionOfExpression().map((each) {
+        final String specific = each[2];
+        final String general = each[4];
+        final String bundle = each[6];
+        return MentionOfExpression(specific, general, bundle);
+      });
+
+  @override
   Parser<Expression> extensibilityExpression() =>
       super.extensibilityExpression().map((each) {
         final String name = each[0];
@@ -394,9 +401,19 @@ class PROVNParserDefinition extends PROVNGrammarDefinition {
         final Object value = each[2];
         if (value is String) {
           return StringAttribute(name, value.toString());
+        } else if (value is num) {
+          return NumericAttribute(name, value);
+        } else if (value is List) {
+          // Typed literal: [string, "%%", datatype]
+          // For now, just use the string part and ignore the datatype
+          return StringAttribute(name, value[0].toString());
         }
         return NumericAttribute(name, value as num);
       });
+
+  @override
+  Parser qualifiedNameLiteral() =>
+      super.qualifiedNameLiteral().map((each) => each[1]);
 
   @override
   Parser stringLiteral() =>

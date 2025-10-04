@@ -15,6 +15,14 @@ void main() {
       expect(e.identifier, 'foo');
       expect(e.attributes.length, 0);
     });
+    test('entityWithQualifiedName', () {
+      final parser = PROVNExpressionsParser;
+      final entities = parser.parse('entity(foo:bar)');
+      expect(entities.value.length, 1);
+      var e = entities.value[0] as EntityExpression;
+      expect(e.identifier, 'foo:bar');
+      expect(e.attributes.length, 0);
+    });
     test('entityWithEmptyAttributeList', () {
       final parser = PROVNExpressionsParser;
       final entities = parser.parse('entity(foo,[])');
@@ -49,6 +57,16 @@ void main() {
       final parser = PROVNExpressionsParser;
       final entities =
           parser.parse('entity(foo,[a=123,b=345,c="foo",d="bar"])');
+      expect(entities.value.length, 1);
+      var e = entities.value[0] as EntityExpression;
+      expect(e.identifier, 'foo');
+      expect(e.attributes.length, 4);
+    });
+    test('entityWithQualifiedAttributeNames', () {
+      final parser = PROVNExpressionsParser;
+      final entities = parser.parse('''entity(foo,[bar:a=123,
+              b=345,c="foo",d="bar"])
+              ''');
       expect(entities.value.length, 1);
       var e = entities.value[0] as EntityExpression;
       expect(e.identifier, 'foo');

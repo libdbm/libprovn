@@ -16,7 +16,19 @@ enum _DateTimeField {
   hour,
   minute,
   second,
-  millisecond
+  millisecond,
+  offset
+}
+
+int _parseOffset(String value) {
+  if (value == 'Z') {
+    return 0;
+  }
+  var sign = value[0] == '-' ? 1 : -1;
+  var hours = int.parse(value.substring(1, 3));
+  var minutes = int.parse(value.substring(4, 6));
+  var offset = sign * ((hours * 60) + minutes);
+  return offset;
 }
 
 Parser<DateTime> dateTimeFromFormat(String format) {
@@ -55,6 +67,14 @@ Parser<DateTime> dateTimeFromFormat(String format) {
       .flatten()
       .map((value) => MapEntry(_DateTimeField.millisecond, int.parse(value))));
 
+  final timezone = 'TZD'.toParser().map((token) => (char('Z') |
+          ((char('-') | char('+')) &
+              digit().repeat(2) &
+              char(':') &
+              digit().repeat(2)))
+      .flatten()
+      .map((value) => MapEntry(_DateTimeField.offset, _parseOffset(value))));
+
   final spacing = whitespace().map((token) => whitespace()
       .star()
       .map((value) => const MapEntry(_DateTimeField.literal, 0)));
@@ -71,6 +91,7 @@ Parser<DateTime> dateTimeFromFormat(String format) {
     minute,
     second,
     millisecond,
+    timezone,
     spacing,
     verbatim
   ].toChoiceParser().cast<Parser<MapEntry<_DateTimeField, int>>>();
@@ -81,15 +102,16 @@ Parser<DateTime> dateTimeFromFormat(String format) {
         .castList<MapEntry<_DateTimeField, int>>()
         .map((entries) {
       final arguments = Map.fromEntries(entries);
-      return DateTime(
-          arguments[_DateTimeField.year] ?? DateTime.now().year,
-          arguments[_DateTimeField.month] ?? DateTime.january,
-          arguments[_DateTimeField.day] ?? 1,
-          arguments[_DateTimeField.hour] ?? 0,
-          arguments[_DateTimeField.minute] ?? 0,
-          arguments[_DateTimeField.second] ?? 0,
-          arguments[_DateTimeField.millisecond] ?? 0,
-          0);
+      return DateTime.utc(
+              arguments[_DateTimeField.year] ?? DateTime.now().year,
+              arguments[_DateTimeField.month] ?? DateTime.january,
+              arguments[_DateTimeField.day] ?? 1,
+              arguments[_DateTimeField.hour] ?? 0,
+              arguments[_DateTimeField.minute] ?? 0,
+              arguments[_DateTimeField.second] ?? 0,
+              arguments[_DateTimeField.millisecond] ?? 0,
+              0)
+          .add(Duration(minutes: arguments[_DateTimeField.offset] ?? 0));
     });
   });
 

@@ -23,6 +23,7 @@ import 'src/edge_cases_test.dart' as edge_cases_test;
 import 'src/provn_roundtrip_test.dart' as provn_roundtrip_test;
 import 'src/prov_json_test.dart' as prov_json_test;
 import 'src/format_roundtrip_test.dart' as format_roundtrip_test;
+import 'src/file_parsing_tests.dart' as file_parsing_test;
 
 void main() {
   group('entity_expressions', entity_expression_test.main);
@@ -45,4 +46,5 @@ void main() {
   group('PROV-N round trip', provn_roundtrip_test.main);
   group('PROV-JSON parsing', prov_json_test.main);
   group('PROV-JSON <-> PROV-N round trip', format_roundtrip_test.main);
+  group('file parsing tests', file_parsing_test.main);
 }

@@ -28,13 +28,24 @@ void main() {
       expect(e.entityId, 'e2');
       expect(e.attributes.length, 0);
     });
-    test('generationWithQualifiedNameAndAgentWithTime', () {
+    test('generationWithQualifiedNameAndActivityWithTime', () {
       final parser = PROVNExpressionsParser;
       final expressions =
-          parser.parse('wasGeneratedBy(e2, a1, 2011-11-16T16:00:00)');
+          parser.parse('wasGeneratedBy(e:e2, a:a1, 2011-11-16T16:00:00)');
       expect(expressions.value.length, 1);
       var e = expressions.value[0] as GenerationExpression;
-      expect(e.entityId, 'e2');
+      expect(e.entityId, 'e:e2');
+      expect(e.activityId, 'a:a1');
+      expect(e.attributes.length, 0);
+    });
+    test('generationWithQualifiedNameAndMarkerWithTime', () {
+      final parser = PROVNExpressionsParser;
+      final expressions = parser
+          .parse('wasGeneratedBy(ex:e2, - , 2008-08-30T01:45:36.123-08:00)');
+      expect(expressions.value.length, 1);
+      var e = expressions.value[0] as GenerationExpression;
+      expect(e.entityId, 'ex:e2');
+      expect(e.activityId, null);
       expect(e.attributes.length, 0);
     });
     test('generationWithName', () {

@@ -46,6 +46,7 @@ class PROVJSONWriter {
     final specializations = <String, dynamic>{};
     final alternates = <String, dynamic>{};
     final memberships = <String, dynamic>{};
+    final mentions = <String, dynamic>{};
     final influences = <String, dynamic>{};
     final bundles = <String, dynamic>{};
 
@@ -96,6 +97,9 @@ class PROVJSONWriter {
         case MembershipExpression():
           final id = '_:id${memberships.length}';
           memberships[id] = _writeMembership(expr);
+        case MentionOfExpression():
+          final id = '_:id${mentions.length}';
+          mentions[id] = _writeMentionOf(expr);
         case InfluenceExpression():
           final id = expr.id ?? '_:id${influences.length}';
           influences[id] = _writeInfluence(expr);
@@ -121,6 +125,7 @@ class PROVJSONWriter {
     if (specializations.isNotEmpty) json['specializationOf'] = specializations;
     if (alternates.isNotEmpty) json['alternateOf'] = alternates;
     if (memberships.isNotEmpty) json['hadMember'] = memberships;
+    if (mentions.isNotEmpty) json['mentionOf'] = mentions;
     if (influences.isNotEmpty) json['wasInfluencedBy'] = influences;
     if (bundles.isNotEmpty) json['bundle'] = bundles;
 
@@ -297,6 +302,14 @@ class PROVJSONWriter {
     return {
       'prov:collection': mem.collection,
       'prov:entity': mem.entity,
+    };
+  }
+
+  Map<String, dynamic> _writeMentionOf(MentionOfExpression mention) {
+    return {
+      'prov:specificEntity': mention.specific,
+      'prov:generalEntity': mention.general,
+      'prov:bundle': mention.bundle,
     };
   }
 

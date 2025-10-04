@@ -1,3 +1,4 @@
+import 'package:collection/collection.dart';
 import 'package:meta/meta.dart';
 
 /// Base class for all PROV nodes.
@@ -40,6 +41,17 @@ class Namespace {
   const Namespace(this.prefix, this.uri);
 
   @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is Namespace &&
+          runtimeType == other.runtimeType &&
+          prefix == other.prefix &&
+          uri == other.uri;
+
+  @override
+  int get hashCode => Object.hash(prefix, uri);
+
+  @override
   String toString() => 'prefix $prefix <$uri>';
 }
 
@@ -65,9 +77,25 @@ class DocumentExpression extends Expression {
 
   /// Creates a PROV document with optional [namespaces] and [expressions].
   DocumentExpression([
-    this.namespaces = const [],
-    this.expressions = const [],
-  ]) : super('document');
+    List<Namespace> namespaces = const [],
+    List<Expression> expressions = const [],
+  ])  : namespaces = List.unmodifiable(namespaces),
+        expressions = List.unmodifiable(expressions),
+        super('document');
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is DocumentExpression &&
+          runtimeType == other.runtimeType &&
+          const DeepCollectionEquality().equals(namespaces, other.namespaces) &&
+          const DeepCollectionEquality().equals(expressions, other.expressions);
+
+  @override
+  int get hashCode => Object.hash(
+        const DeepCollectionEquality().hash(namespaces),
+        const DeepCollectionEquality().hash(expressions),
+      );
 
   @override
   String toString() =>
@@ -101,10 +129,32 @@ class BundleExpression extends Expression {
   /// Creates a bundle identified by [identifier] with [attributes], and optional [namespaces] and [expressions].
   BundleExpression(
     this.identifier,
-    this.attributes, [
-    this.namespaces = const [],
-    this.expressions = const [],
-  ]) : super('bundle');
+    List<Attribute> attributes, [
+    List<Namespace> namespaces = const [],
+    List<Expression> expressions = const [],
+  ])  : attributes = List.unmodifiable(attributes),
+        namespaces = List.unmodifiable(namespaces),
+        expressions = List.unmodifiable(expressions),
+        super('bundle');
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is BundleExpression &&
+          runtimeType == other.runtimeType &&
+          identifier == other.identifier &&
+          const DeepCollectionEquality().equals(namespaces, other.namespaces) &&
+          const DeepCollectionEquality()
+              .equals(expressions, other.expressions) &&
+          const DeepCollectionEquality().equals(attributes, other.attributes);
+
+  @override
+  int get hashCode => Object.hash(
+        identifier,
+        const DeepCollectionEquality().hash(namespaces),
+        const DeepCollectionEquality().hash(expressions),
+        const DeepCollectionEquality().hash(attributes),
+      );
 
   @override
   String toString() {
@@ -128,14 +178,23 @@ class EntityExpression extends Expression {
   final List<Attribute> attributes;
 
   /// Creates an entity with [identifier] and associated [attributes].
-  EntityExpression(this.identifier, this.attributes) : super('entity');
+  EntityExpression(this.identifier, List<Attribute> attributes)
+      : attributes = List.unmodifiable(attributes),
+        super('entity');
 
   @override
   bool operator ==(Object other) =>
-      other is EntityExpression && identifier == other.identifier;
+      identical(this, other) ||
+      other is EntityExpression &&
+          runtimeType == other.runtimeType &&
+          identifier == other.identifier &&
+          const DeepCollectionEquality().equals(attributes, other.attributes);
 
   @override
-  int get hashCode => identifier.hashCode;
+  int get hashCode => Object.hash(
+        identifier,
+        const DeepCollectionEquality().hash(attributes),
+      );
 
   @override
   String toString() => 'entity($identifier)';
@@ -164,15 +223,28 @@ class ActivityExpression extends Expression {
   final DateTime? to;
 
   /// Creates an activity with [identifier], [attributes], and optional start/end times [from] and [to].
-  ActivityExpression(this.identifier, this.attributes, this.from, this.to)
-      : super('activity');
+  ActivityExpression(
+      this.identifier, List<Attribute> attributes, this.from, this.to)
+      : attributes = List.unmodifiable(attributes),
+        super('activity');
 
   @override
   bool operator ==(Object other) =>
-      other is ActivityExpression && identifier == other.identifier;
+      identical(this, other) ||
+      other is ActivityExpression &&
+          runtimeType == other.runtimeType &&
+          identifier == other.identifier &&
+          const DeepCollectionEquality().equals(attributes, other.attributes) &&
+          from == other.from &&
+          to == other.to;
 
   @override
-  int get hashCode => identifier.hashCode;
+  int get hashCode => Object.hash(
+        identifier,
+        const DeepCollectionEquality().hash(attributes),
+        from,
+        to,
+      );
 
   @override
   String toString() => 'activity($identifier'
@@ -213,15 +285,29 @@ class GenerationExpression extends Expression {
     this.entityId,
     this.activityId,
     this.datetime,
-    this.attributes,
-  ) : super('wasGeneratedBy');
+    List<Attribute> attributes,
+  )   : attributes = List.unmodifiable(attributes),
+        super('wasGeneratedBy');
 
   @override
   bool operator ==(Object other) =>
-      other is GenerationExpression && entityId == other.entityId;
+      identical(this, other) ||
+      other is GenerationExpression &&
+          runtimeType == other.runtimeType &&
+          id == other.id &&
+          entityId == other.entityId &&
+          activityId == other.activityId &&
+          datetime == other.datetime &&
+          const DeepCollectionEquality().equals(attributes, other.attributes);
 
   @override
-  int get hashCode => entityId.hashCode;
+  int get hashCode => Object.hash(
+        id,
+        entityId,
+        activityId,
+        datetime,
+        const DeepCollectionEquality().hash(attributes),
+      );
 
   @override
   String toString() => 'wasGeneratedBy(${id ?? '_'},'
@@ -261,15 +347,29 @@ class UsageExpression extends Expression {
     this.entityId,
     this.activityId,
     this.datetime,
-    this.attributes,
-  ) : super('used');
+    List<Attribute> attributes,
+  )   : attributes = List.unmodifiable(attributes),
+        super('used');
 
   @override
   bool operator ==(Object other) =>
-      other is GenerationExpression && activityId == other.activityId;
+      identical(this, other) ||
+      other is UsageExpression &&
+          runtimeType == other.runtimeType &&
+          id == other.id &&
+          entityId == other.entityId &&
+          activityId == other.activityId &&
+          datetime == other.datetime &&
+          const DeepCollectionEquality().equals(attributes, other.attributes);
 
   @override
-  int get hashCode => entityId.hashCode;
+  int get hashCode => Object.hash(
+        id,
+        entityId,
+        activityId,
+        datetime,
+        const DeepCollectionEquality().hash(attributes),
+      );
 
   @override
   String toString() => 'used(${id ?? '_'},'
@@ -305,18 +405,27 @@ class CommunicationExpression extends Expression {
     this.id,
     this.informedAgentId,
     this.informantId,
-    this.attributes,
-  ) : super('wasInformedBy');
+    List<Attribute> attributes,
+  )   : attributes = List.unmodifiable(attributes),
+        super('wasInformedBy');
 
   @override
   bool operator ==(Object other) =>
+      identical(this, other) ||
       other is CommunicationExpression &&
-      informedAgentId == other.informedAgentId &&
-      informantId == other.informantId;
+          runtimeType == other.runtimeType &&
+          id == other.id &&
+          informedAgentId == other.informedAgentId &&
+          informantId == other.informantId &&
+          const DeepCollectionEquality().equals(attributes, other.attributes);
 
   @override
-  int get hashCode =>
-      Object.hash(informedAgentId.hashCode, informantId.hashCode);
+  int get hashCode => Object.hash(
+        id,
+        informedAgentId,
+        informantId,
+        const DeepCollectionEquality().hash(attributes),
+      );
 
   @override
   String toString() => 'wasInformedBy(${id ?? '_'},'
@@ -359,15 +468,31 @@ class StartExpression extends Expression {
     this.activityId,
     this.starterId,
     this.datetime,
-    this.attributes,
-  ) : super('wasStartedBy');
+    List<Attribute> attributes,
+  )   : attributes = List.unmodifiable(attributes),
+        super('wasStartedBy');
 
   @override
   bool operator ==(Object other) =>
-      other is StartExpression && activityId == other.activityId;
+      identical(this, other) ||
+      other is StartExpression &&
+          runtimeType == other.runtimeType &&
+          id == other.id &&
+          entityId == other.entityId &&
+          activityId == other.activityId &&
+          starterId == other.starterId &&
+          datetime == other.datetime &&
+          const DeepCollectionEquality().equals(attributes, other.attributes);
 
   @override
-  int get hashCode => entityId.hashCode;
+  int get hashCode => Object.hash(
+        id,
+        entityId,
+        activityId,
+        starterId,
+        datetime,
+        const DeepCollectionEquality().hash(attributes),
+      );
 
   @override
   String toString() => 'wasStartedBy(${id ?? '_'},'
@@ -410,15 +535,31 @@ class EndExpression extends Expression {
     this.activityId,
     this.enderId,
     this.datetime,
-    this.attributes,
-  ) : super('wasEndedBy');
+    List<Attribute> attributes,
+  )   : attributes = List.unmodifiable(attributes),
+        super('wasEndedBy');
 
   @override
   bool operator ==(Object other) =>
-      other is GenerationExpression && activityId == other.activityId;
+      identical(this, other) ||
+      other is EndExpression &&
+          runtimeType == other.runtimeType &&
+          id == other.id &&
+          entityId == other.entityId &&
+          activityId == other.activityId &&
+          enderId == other.enderId &&
+          datetime == other.datetime &&
+          const DeepCollectionEquality().equals(attributes, other.attributes);
 
   @override
-  int get hashCode => entityId.hashCode;
+  int get hashCode => Object.hash(
+        id,
+        entityId,
+        activityId,
+        enderId,
+        datetime,
+        const DeepCollectionEquality().hash(attributes),
+      );
 
   @override
   String toString() => 'wasEndedBy(${id ?? '_'},'
@@ -457,15 +598,29 @@ class InvalidationExpression extends Expression {
     this.entityId,
     this.activityId,
     this.datetime,
-    this.attributes,
-  ) : super('wasInvalidatedBy');
+    List<Attribute> attributes,
+  )   : attributes = List.unmodifiable(attributes),
+        super('wasInvalidatedBy');
 
   @override
   bool operator ==(Object other) =>
-      other is InvalidationExpression && entityId == other.entityId;
+      identical(this, other) ||
+      other is InvalidationExpression &&
+          runtimeType == other.runtimeType &&
+          id == other.id &&
+          entityId == other.entityId &&
+          activityId == other.activityId &&
+          datetime == other.datetime &&
+          const DeepCollectionEquality().equals(attributes, other.attributes);
 
   @override
-  int get hashCode => entityId.hashCode;
+  int get hashCode => Object.hash(
+        id,
+        entityId,
+        activityId,
+        datetime,
+        const DeepCollectionEquality().hash(attributes),
+      );
 
   @override
   String toString() => 'wasInvalidatedBy(${id ?? '_'},'
@@ -506,7 +661,8 @@ class DerivationExpression extends Expression {
   /// Attributes captured as part of this expression.
   final List<Attribute> attributes;
 
-  /// Creates a derivation relation from [usedEntityId] to [generatedEntityId], with optional [activityId], [generationId], [usageId], [id], and [attributes].
+  /// Creates a derivation relation from [usedEntityId] to [generatedEntityId],
+  /// with optional [activityId], [generationId], [usageId], [id], and [attributes].
   DerivationExpression(
     this.id,
     this.generatedEntityId,
@@ -514,17 +670,33 @@ class DerivationExpression extends Expression {
     this.activityId,
     this.generationId,
     this.usageId,
-    this.attributes,
-  ) : super('wasDerivedFrom');
+    List<Attribute> attributes,
+  )   : attributes = List.unmodifiable(attributes),
+        super('wasDerivedFrom');
 
   @override
   bool operator ==(Object other) =>
+      identical(this, other) ||
       other is DerivationExpression &&
-      generatedEntityId == other.generatedEntityId &&
-      usedEntityId == other.usedEntityId;
+          runtimeType == other.runtimeType &&
+          id == other.id &&
+          generatedEntityId == other.generatedEntityId &&
+          usedEntityId == other.usedEntityId &&
+          activityId == other.activityId &&
+          generationId == other.generationId &&
+          usageId == other.usageId &&
+          const DeepCollectionEquality().equals(attributes, other.attributes);
 
   @override
-  int get hashCode => generatedEntityId.hashCode;
+  int get hashCode => Object.hash(
+        id,
+        generatedEntityId,
+        usedEntityId,
+        activityId,
+        generationId,
+        usageId,
+        const DeepCollectionEquality().hash(attributes),
+      );
 
   @override
   String toString() => 'wasDerivedFrom(${id ?? '_'},'
@@ -550,14 +722,23 @@ class AgentExpression extends Expression {
   final List<Attribute> attributes;
 
   /// Creates an agent with [identifier] and associated [attributes].
-  AgentExpression(this.identifier, this.attributes) : super('agent');
+  AgentExpression(this.identifier, List<Attribute> attributes)
+      : attributes = List.unmodifiable(attributes),
+        super('agent');
 
   @override
   bool operator ==(Object other) =>
-      other is AgentExpression && identifier == other.identifier;
+      identical(this, other) ||
+      other is AgentExpression &&
+          runtimeType == other.runtimeType &&
+          identifier == other.identifier &&
+          const DeepCollectionEquality().equals(attributes, other.attributes);
 
   @override
-  int get hashCode => identifier.hashCode;
+  int get hashCode => Object.hash(
+        identifier,
+        const DeepCollectionEquality().hash(attributes),
+      );
 
   @override
   String toString() => 'agent($identifier)';
@@ -589,17 +770,27 @@ class AttributionExpression extends Expression {
     this.id,
     this.entityId,
     this.agentId,
-    this.attributes,
-  ) : super('wasAttributedTo');
+    List<Attribute> attributes,
+  )   : attributes = List.unmodifiable(attributes),
+        super('wasAttributedTo');
 
   @override
   bool operator ==(Object other) =>
+      identical(this, other) ||
       other is AttributionExpression &&
-      entityId == other.entityId &&
-      agentId == other.agentId;
+          runtimeType == other.runtimeType &&
+          id == other.id &&
+          entityId == other.entityId &&
+          agentId == other.agentId &&
+          const DeepCollectionEquality().equals(attributes, other.attributes);
 
   @override
-  int get hashCode => entityId.hashCode;
+  int get hashCode => Object.hash(
+        id,
+        entityId,
+        agentId,
+        const DeepCollectionEquality().hash(attributes),
+      );
 
   @override
   String toString() => 'wasAttributedTo($id,'
@@ -638,17 +829,29 @@ class AssociationExpression extends Expression {
     this.activityId,
     this.agentId,
     this.planId,
-    this.attributes,
-  ) : super('wasAssociatedWith');
+    List<Attribute> attributes,
+  )   : attributes = List.unmodifiable(attributes),
+        super('wasAssociatedWith');
 
   @override
   bool operator ==(Object other) =>
+      identical(this, other) ||
       other is AssociationExpression &&
-      activityId == other.activityId &&
-      agentId == other.agentId;
+          runtimeType == other.runtimeType &&
+          activityId == other.activityId &&
+          planId == other.planId &&
+          id == other.id &&
+          agentId == other.agentId &&
+          const DeepCollectionEquality().equals(attributes, other.attributes);
 
   @override
-  int get hashCode => activityId.hashCode;
+  int get hashCode => Object.hash(
+        activityId,
+        planId,
+        id,
+        agentId,
+        const DeepCollectionEquality().hash(attributes),
+      );
 
   @override
   String toString() => 'wasAssociatedWith($id,'
@@ -686,17 +889,29 @@ class DelegationExpression extends Expression {
     this.delegateId,
     this.agentId,
     this.activityId,
-    this.attributes,
-  ) : super('actedOnBehalfOf');
+    List<Attribute> attributes,
+  )   : attributes = List.unmodifiable(attributes),
+        super('actedOnBehalfOf');
 
   @override
   bool operator ==(Object other) =>
+      identical(this, other) ||
       other is DelegationExpression &&
-      delegateId == other.delegateId &&
-      agentId == other.agentId;
+          runtimeType == other.runtimeType &&
+          id == other.id &&
+          delegateId == other.delegateId &&
+          agentId == other.agentId &&
+          activityId == other.activityId &&
+          const DeepCollectionEquality().equals(attributes, other.attributes);
 
   @override
-  int get hashCode => Object.hash(delegateId.hashCode, agentId.hashCode);
+  int get hashCode => Object.hash(
+        id,
+        delegateId,
+        agentId,
+        activityId,
+        const DeepCollectionEquality().hash(attributes),
+      );
 
   @override
   String toString() => 'actedOnBehalfOf(${id ?? '_'},'
@@ -729,17 +944,27 @@ class InfluenceExpression extends Expression {
     this.id,
     this.influencee,
     this.influencer,
-    this.attributes,
-  ) : super('wasInfluencedBy');
+    List<Attribute> attributes,
+  )   : attributes = List.unmodifiable(attributes),
+        super('wasInfluencedBy');
 
   @override
   bool operator ==(Object other) =>
+      identical(this, other) ||
       other is InfluenceExpression &&
-      influencee == other.influencee &&
-      influencer == other.influencer;
+          runtimeType == other.runtimeType &&
+          id == other.id &&
+          influencee == other.influencee &&
+          influencer == other.influencer &&
+          const DeepCollectionEquality().equals(attributes, other.attributes);
 
   @override
-  int get hashCode => Object.hash(influencee.hashCode, influencer.hashCode);
+  int get hashCode => Object.hash(
+        id,
+        influencee,
+        influencer,
+        const DeepCollectionEquality().hash(attributes),
+      );
 
   @override
   String toString() => 'wasInfluencedBy(${id ?? '_'},'
@@ -766,12 +991,14 @@ class AlternateExpression extends Expression {
 
   @override
   bool operator ==(Object other) =>
+      identical(this, other) ||
       other is AlternateExpression &&
-      alternate == other.alternate &&
-      original == other.original;
+          runtimeType == other.runtimeType &&
+          alternate == other.alternate &&
+          original == other.original;
 
   @override
-  int get hashCode => Object.hash(alternate.hashCode, original.hashCode);
+  int get hashCode => Object.hash(alternate, original);
 
   @override
   String toString() => 'alternateOf($alternate, $original)';
@@ -796,12 +1023,14 @@ class SpecializationExpression extends Expression {
 
   @override
   bool operator ==(Object other) =>
+      identical(this, other) ||
       other is SpecializationExpression &&
-      alternate == other.alternate &&
-      original == other.original;
+          runtimeType == other.runtimeType &&
+          alternate == other.alternate &&
+          original == other.original;
 
   @override
-  int get hashCode => Object.hash(alternate.hashCode, original.hashCode);
+  int get hashCode => Object.hash(alternate, original);
 
   @override
   String toString() => 'specializationOf($alternate, $original)';
@@ -824,15 +1053,56 @@ class MembershipExpression extends Expression {
 
   @override
   bool operator ==(Object other) =>
+      identical(this, other) ||
       other is MembershipExpression &&
-      collection == other.collection &&
-      entity == other.entity;
+          runtimeType == other.runtimeType &&
+          collection == other.collection &&
+          entity == other.entity;
 
   @override
-  int get hashCode => Object.hash(collection.hashCode, entity.hashCode);
+  int get hashCode => Object.hash(collection, entity);
 
   @override
   String toString() => 'hadMember($collection, $entity)';
+}
+
+/// Represents a mention of an entity in a bundle.
+///
+/// MentionOf (mentionOf) asserts that a specific entity is mentioned in a bundle
+/// as a specialization of a more general entity. This is part of the PROV
+/// collections extension and enables provenance of provenance.
+///
+/// PROV-N form:
+///   mentionOf(specificEntity, generalEntity, bundle)
+@immutable
+class MentionOfExpression extends Expression {
+  /// The identifier of the specific entity being mentioned.
+  final String specific;
+
+  /// The identifier of the general entity.
+  final String general;
+
+  /// The identifier of the bundle in which the mention occurs.
+  final String bundle;
+
+  /// Creates a mention relation where [specific] is a mention of [general] in [bundle].
+  MentionOfExpression(this.specific, this.general, this.bundle)
+      : super('mentionOf');
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is MentionOfExpression &&
+          runtimeType == other.runtimeType &&
+          specific == other.specific &&
+          general == other.general &&
+          bundle == other.bundle;
+
+  @override
+  int get hashCode => Object.hash(specific, general, bundle);
+
+  @override
+  String toString() => 'mentionOf($specific, $general, $bundle)';
 }
 
 /// Represents user-defined extensions to the PROV relation vocabulary.
@@ -855,9 +1125,27 @@ class ExtensibilityExpression extends Expression {
   ExtensibilityExpression(
     this.id,
     String name,
-    this.arguments,
-    this.attributes,
-  ) : super(name);
+    List<dynamic> arguments,
+    List<Attribute> attributes,
+  )   : arguments = List.unmodifiable(arguments),
+        attributes = List.unmodifiable(attributes),
+        super(name);
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is ExtensibilityExpression &&
+          runtimeType == other.runtimeType &&
+          id == other.id &&
+          const DeepCollectionEquality().equals(arguments, other.arguments) &&
+          const DeepCollectionEquality().equals(attributes, other.attributes);
+
+  @override
+  int get hashCode => Object.hash(
+        id,
+        const DeepCollectionEquality().hash(arguments),
+        const DeepCollectionEquality().hash(attributes),
+      );
 }
 
 /// Base class for PROV attributes.
@@ -882,10 +1170,14 @@ abstract class Attribute<T> extends Node {
 
   @override
   bool operator ==(Object other) =>
-      other is Attribute && name == other.name && value == other.value;
+      identical(this, other) ||
+      other is Attribute &&
+          runtimeType == other.runtimeType &&
+          name == other.name &&
+          value == other.value;
 
   @override
-  int get hashCode => name.hashCode;
+  int get hashCode => Object.hash(name, value);
 }
 
 /// An attribute with a string value.

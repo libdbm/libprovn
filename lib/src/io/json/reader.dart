@@ -160,6 +160,14 @@ class PROVJSONReader {
       });
     }
 
+    // Parse mentionOf
+    if (json.containsKey('mentionOf')) {
+      final mentions = json['mentionOf'] as Map<String, dynamic>;
+      mentions.forEach((id, props) {
+        expressions.add(_parseMentionOf(id, props as Map<String, dynamic>));
+      });
+    }
+
     // Parse wasInfluencedBy
     if (json.containsKey('wasInfluencedBy')) {
       final influences = json['wasInfluencedBy'] as Map<String, dynamic>;
@@ -342,6 +350,13 @@ class PROVJSONReader {
     final collection = props['prov:collection']?.toString() ?? id;
     final entity = props['prov:entity']?.toString() ?? '';
     return MembershipExpression(collection, entity);
+  }
+
+  MentionOfExpression _parseMentionOf(String id, Map<String, dynamic> props) {
+    final specific = props['prov:specificEntity']?.toString() ?? id;
+    final general = props['prov:generalEntity']?.toString() ?? '';
+    final bundle = props['prov:bundle']?.toString() ?? '';
+    return MentionOfExpression(specific, general, bundle);
   }
 
   InfluenceExpression _parseInfluence(String id, Map<String, dynamic> props) {

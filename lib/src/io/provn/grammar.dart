@@ -1,6 +1,7 @@
 // ignore_for_file: non_constant_identifier_names, camel_case_types
 
 import 'package:petitparser/petitparser.dart';
+
 import 'datetime.dart';
 
 class PROVNGrammarDefinition extends GrammarDefinition {
@@ -15,8 +16,7 @@ class PROVNGrammarDefinition extends GrammarDefinition {
       ref0(START_DOCUMENT) &
       ref0(optionalIdentifierAndAttributes) &
       ref0(namespaceDeclarations).optional() &
-      ref0(expression).star() &
-      ref0(bundle).star() &
+      (ref0(expression) | ref0(bundle)).star() &
       ref0(END_DOCUMENT);
 
   Parser expressions() => ref0(expression).star();
@@ -42,6 +42,7 @@ class PROVNGrammarDefinition extends GrammarDefinition {
       ref0(alternateExpression) |
       ref0(specializationExpression) |
       ref0(membershipExpression) |
+      ref0(mentionOfExpression) |
       ref0(extensibilityExpression);
 
   /*
@@ -315,6 +316,19 @@ PROV-N provides no dedicated syntax for Person, Organization, SoftwareAgent. Ins
       ref0(CLOSE_PAREN);
 
   /*
+[27]   	mentionOfExpression	   ::=   	"mentionOf" "(" identifier "," identifier "," identifier ")"
+   */
+  Parser mentionOfExpression() =>
+      ref0(MENTION_OF) &
+      ref0(OPEN_PAREN) &
+      ref0(identifier) &
+      ref0(COMMA) &
+      ref0(identifier) &
+      ref0(COMMA) &
+      ref0(identifier) &
+      ref0(CLOSE_PAREN);
+
+  /*
  [49]   	extensibilityExpression	   ::=   	QUALIFIED_NAME "(" optionalIdentifier extensibilityArgument ( "," extensibilityArgument )* optionalAttributeValuePairs ")"
    */
   Parser extensibilityExpression() =>
@@ -412,14 +426,6 @@ PROV-N provides no dedicated syntax for Person, Organization, SoftwareAgent. Ins
       ref0(identifier) & ref0(EQUALS) & ref0(literal);
 
   /*
-
-[40]   	literal	   ::=   	typedLiteral
-| convenienceNotation
-[41]   	typedLiteral	   ::=   	STRING_LITERAL "%%" datatype
-[42]   	datatype	   ::=   	QUALIFIED_NAME
-[43]   	convenienceNotation	   ::=   	STRING_LITERAL (LANGTAG)?
-| INT_LITERAL
-| QUALIFIED_NAME_LITERAL
 [58]   	<STRING_LITERAL>	   ::=   	STRING_LITERAL2
 | STRING_LITERAL_LONG2
 [60]   	<INT_LITERAL>	   ::=   	("-")? (DIGIT)+
@@ -434,10 +440,17 @@ PROV-N provides no dedicated syntax for Person, Organization, SoftwareAgent. Ins
 [90]  	STRING_LITERAL_LONG2	  ::=  	'"""' ( ( '"' | '""' )? ( [^"\] | ECHAR ) )* '"""'
 [91]  	ECHAR	  ::=  	'\' [tbnrf\"']
    */
-  // literal ::= typedLiteral | convenienceNotation
-  // Simplified to maintain backward compatibility
-  Parser literal() => [ref0(stringLiteral), ref0(numberLiteral)]
-      .toChoiceParser(failureJoiner: selectFarthestJoined);
+  // [40]   	literal	   ::=   	typedLiteral | convenienceNotation
+  Parser literal() => ref0(typedLiteral) | ref0(convenienceNotation);
+
+  // [41]   	typedLiteral	   ::=   	STRING_LITERAL "%%" datatype
+  // [42]   	datatype	   ::=   	QUALIFIED_NAME
+  Parser typedLiteral() =>
+      ref0(stringLiteral) & ref0(DOUBLE_PERCENT) & ref0(QUALIFIED_NAME);
+
+  // [43]   	convenienceNotation	   ::=   	STRING_LITERAL (LANGTAG)? | INT_LITERAL | QUALIFIED_NAME_LITERAL
+  Parser convenienceNotation() =>
+      ref0(stringLiteral) | ref0(numberLiteral) | ref0(qualifiedNameLiteral);
 
   /*
 [10]   	optionalIdentifier	   ::=   	( identifierOrMarker ";" )?
@@ -461,12 +474,15 @@ PROV-N provides no dedicated syntax for Person, Organization, SoftwareAgent. Ins
 
   Parser datetimeLiteral() => ref1(token, ref0(dateTimePrimitive));
 
+  Parser qualifiedNameLiteral() =>
+      char('\'') & ref0(QUALIFIED_NAME) & char('\'');
+
   Parser qualifiedName() => ref0(IDENTIFIER);
 
   Parser identifier() => ref0(IDENTIFIER);
 
   Parser dateTimePrimitive() =>
-      dateTimeFromFormat('yyyy-MM-ddThh:mm:ss.SSSZ') |
+      dateTimeFromFormat('yyyy-MM-ddThh:mm:ss.SSSTZD') |
       dateTimeFromFormat('yyyy-MM-ddThh:mm:ssZ') |
       dateTimeFromFormat('yyyy-MM-ddThh:mm:ss.SSS') |
       dateTimeFromFormat('yyyy-MM-ddThh:mm:ss');
@@ -495,9 +511,13 @@ PROV-N provides no dedicated syntax for Person, Organization, SoftwareAgent. Ins
   // Whitespace and comment handling
   Parser space() => whitespace() | ref0(commentSingle) | ref0(commentMulti);
 
-  Parser commentSingle() => char('%') & Token.newlineParser().neg().star();
+  Parser commentSingle() =>
+      string('//') & pattern('\n\r').neg().star() & pattern('\n\r').optional();
 
-  Parser commentMulti() => string('/*').starLazy(string('*/')) & string('*/');
+  Parser commentMulti() =>
+      string('/*') &
+      (ref0(commentMulti) | string('*/').neg()).star() &
+      string('*/');
 
   Parser token(Object parser, [String? message]) {
     if (parser is Parser) {
@@ -534,6 +554,8 @@ PROV-N provides no dedicated syntax for Person, Organization, SoftwareAgent. Ins
   Parser MARKER() => HYPHEN() | UNDERSCORE();
 
   Parser SEMICOLON() => ref1(token, ';');
+
+  Parser DOUBLE_PERCENT() => ref1(token, '%%');
 
   Parser ENTITY() => ref1(token, 'entity');
 
@@ -573,6 +595,8 @@ PROV-N provides no dedicated syntax for Person, Organization, SoftwareAgent. Ins
 
   Parser HAD_MEMBER() => ref1(token, 'hadMember');
 
+  Parser MENTION_OF() => ref1(token, 'mentionOf');
+
   Parser START_DOCUMENT() =>
       ref1(token, 'document') | ref1(token, 'startDocument');
 
@@ -608,8 +632,13 @@ PROV-N provides no dedicated syntax for Person, Organization, SoftwareAgent. Ins
       ref0(PN_CHARS).optional();
 
   // [100]  	[53]   	<PN_LOCAL>	   ::=   	( PN_CHARS_U | [0-9] | PN_CHARS_OTHERS ) ( ( PN_CHARS | "." | PN_CHARS_OTHERS )* ( PN_CHARS | PN_CHARS_OTHERS ) )?
-  // Simplified version to maintain compatibility
-  Parser PN_LOCAL() => ref0(PN_CHARS_U) & ref0(PN_CHARS).star();
+  // W3C spec-compliant implementation
+  // Allows PN_CHARS_U, digits, or PN_CHAR_OTHERS as first character
+  // Allows PN_CHARS, ".", or PN_CHAR_OTHERS as continuation characters
+  // Note: Simplified to allow trailing dots for ease of implementation
+  Parser PN_LOCAL() =>
+      (ref0(PN_CHARS_U) | digit() | ref0(PN_CHAR_OTHERS)) &
+      (ref0(PN_CHARS) | char('.') | ref0(PN_CHAR_OTHERS)).star();
 
   // [95]	  PN_CHARS_BASE	  ::=  	[A-Z] | [a-z]
   // | [#x00C0-#x00D6] | [#x00D8-#x00F6] | [#x00F8-#x02FF] | [#x0370-#x037D]

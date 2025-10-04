@@ -30,3 +30,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Clean up linting issues
 - Added more complete documentation
 
+## [1.0.2] - 2025-10-04
+
+### Added
+- Fixed various parsing issues, especially around namespaces and datetime
+- Added more tests and support for mentionOf explicitly
+- Fixed some issues with immutability and equality testing in types.dart

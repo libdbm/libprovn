@@ -99,6 +99,8 @@ class PROVNWriter {
         _writeAlternate(expr);
       case MembershipExpression():
         _writeMembership(expr);
+      case MentionOfExpression():
+        _writeMentionOf(expr);
       case BundleExpression():
         _writeBundle(expr);
       case InfluenceExpression():
@@ -461,6 +463,12 @@ class PROVNWriter {
 
   void _writeMembership(MembershipExpression mem) {
     _write('hadMember(${mem.collection}, ${mem.entity})');
+    _writeLine('');
+  }
+
+  void _writeMentionOf(MentionOfExpression mention) {
+    _write(
+        'mentionOf(${mention.specific}, ${mention.general}, ${mention.bundle})');
     _writeLine('');
   }
 
